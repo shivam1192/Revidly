@@ -7,10 +7,8 @@ const Jwt = require("jsonwebtoken");
 const {accesstoken,refreshtoken,sendaccesstoken,sendrefreshtoken} = require("../function/jwt");
 const {isAuth} = require('../function/isAuth')
 const {sendEmail} = require('../function/sendEmail')
-var helper = require('sendgrid').mail;
-const async = require('async');
+const MediaMongooseModal = require("../Modals/mediaschema")
 
-let otpverify
 const user_schema = Joi.object({
     user_name: Joi.string().required().min(6),
     user_email: Joi.string().required().min(6).email(),
@@ -87,20 +85,6 @@ Route.post('/logout',(req,res)=>{
     return res.send({accesstoken:""})
 })
 
-Route.post('/protected', async(req,res)=>{
-    try{
-                 const id = isAuth(req)
-                 if(id){
-                     res.send("This is protected data")
-                 }
-                 else{
-                     res.status(203).send("User not logged in")
-                 }
-
-    }catch(err){
-        res.status(203).send("not permitted")
-    }
-})
 
 
 
@@ -163,5 +147,51 @@ Route.post("/updatepassword",async(req,res)=>{
          console.log("wrong email and otp input")
      }
 })
+
+
+Route.post('/api/media/upload', async(req,res)=>{
+    try{
+                 const id = isAuth(req)
+                 if(id){
+                     const {media_url} = req.body
+                     const new_media = new MediaMongooseModal({
+                        author_id:id,
+                        media_url:media_url
+                    })
+                    try{
+                           const savemedia = await new_media.save();
+                           res.send(savemedia.media_url)
+                    }catch(error){
+                        res.status(203).send("Something wrong occured")
+                    }
+                 }
+                 else{
+                     res.status(203).send("User not logged in")
+                 }
+
+    }catch(err){
+        console.log(err)
+        res.status(203).send("not permitted")
+    }
+})
+
+Route.get("/api/:userid/media",async(req,res)=>{
+    try{
+        const id = isAuth(req)
+        if(id&&id==req.params.userid){
+            const id = await MediaMongooseModal.find({author_id:req.params.userid})
+            for(let i=0;i<id.length;i++){
+                res.send(id[i].media_url)
+            }
+        }
+        else{
+            res.status(203).send("User not logged in")
+        }
+}catch(err){
+console.log(err)
+res.status(203).send("not permitted")
+}
+})
+
 
 module.exports = Route;
