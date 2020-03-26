@@ -157,11 +157,11 @@ Route.post("/updatepassword",async(req,res)=>{
         const salt = await bcrypt.genSalt(10);
         const hash = await bcrypt.hash(new_password,salt);
         const passwordupdate= await Mongoosemodal.updateOne({_id:email._id},{$set : {user_password: new_password}})
+        const otpupdate= await Mongoosemodal.updateOne({_id:email._id},{$set : {otp: ""}})
         res.send(email)
      }else{
          console.log("wrong email and otp input")
      }
- 
 })
 
 module.exports = Route;
