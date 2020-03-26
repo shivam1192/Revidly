@@ -18,6 +18,9 @@ const mongooseSchema = mongoose.Schema({
     },
     refreshtoken:{
         type:String
+    },
+    otp:{
+        type:Number
     }
 })
 

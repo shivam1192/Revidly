@@ -6,6 +6,11 @@ const bcrypt = require("bcryptjs");
 const Jwt = require("jsonwebtoken");
 const {accesstoken,refreshtoken,sendaccesstoken,sendrefreshtoken} = require("../function/jwt");
 const {isAuth} = require('../function/isAuth')
+const {sendEmail} = require('../function/sendEmail')
+var helper = require('sendgrid').mail;
+const async = require('async');
+
+let otpverify
 const user_schema = Joi.object({
     user_name: Joi.string().required().min(6),
     user_email: Joi.string().required().min(6).email(),
@@ -123,4 +128,40 @@ Route.post('/refresh_token',async(req,res)=>{
                 sendrefreshtoken(res,refresh) 
                 return res.send({accesstoken:access})
 })
+
+
+Route.post("/forgotpassword",async(req,res)=>{
+    const {user_email} = req.body
+    const email = await Mongoosemodal.findOne({user_email:user_email})
+    if(email){
+    var val = Math.floor(1000 + Math.random() * 9000)
+        sendEmail(
+            to = user_email,
+            from = "sg9827252555@gmail.com",
+            subject = "hello world",
+            opt = val
+        )
+        const otpupdate= await Mongoosemodal.updateOne({_id:email._id},{$set : {otp: val}})
+
+        res.send("Email sent!!")
+    }else{
+        res.status(203).send("email doesn't exist")
+    }
+        
+})
+
+Route.post("/updatepassword",async(req,res)=>{
+    const {user_email,code,new_password} = req.body
+     const email = await Mongoosemodal.findOne({user_email:user_email})
+     if(email&&email.otp==code){
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash(new_password,salt);
+        const passwordupdate= await Mongoosemodal.updateOne({_id:email._id},{$set : {user_password: new_password}})
+        res.send(email)
+     }else{
+         console.log("wrong email and otp input")
+     }
+ 
+})
+
 module.exports = Route;
